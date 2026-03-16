@@ -1,5 +1,86 @@
 # 开发日志
 
+## 2026-03-16 - 将 execSync 改为 spawn
+
+### 需求
+将项目从同步的 `execSync` 改为异步的 `spawn`，实现更好的子进程控制。
+
+### 实现方案
+
+#### 1. 改用 spawn 创建子进程
+```javascript
+const { spawn } = require('child_process');
+const command = process.platform === 'win32' ? 'cmd.exe' : 'opencode';
+const args = process.platform === 'win32' 
+  ? ['/c', 'opencode', 'run', '--format', 'json', '--model', model, prompt]
+  : ['run', '--format', 'json', '--model', model, prompt];
+
+const child = spawn(command, args, {
+  stdio: ['pipe', 'pipe', 'pipe'],
+  timeout: 120000
+});
+```
+
+#### 2. 处理 stdout 数据流
+使用 buffer 处理跨数据块的 JSON 行：
+```javascript
+let buffer = '';
+
+child.stdout.on('data', (chunk) => {
+  buffer += chunk.toString('utf8');
+  
+  const lines = buffer.split('\n');
+  buffer = lines.pop() || '';
+  
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    
+    try {
+      const data = JSON.parse(line);
+      
+      if (data.type === 'text' && data.part?.text) {
+        process.stdout.write(data.part.text);
+      }
+    } catch (err) {
+      // 忽略 JSON 解析错误
+    }
+  }
+});
+```
+
+#### 3. 添加事件处理
+- `stderr.on('data')`: 处理错误输出
+- `close.on('close')`: 处理进程退出，处理剩余 buffer
+- `error.on('error')`: 处理进程启动错误
+
+### 技术要点
+
+1. **Windows 兼容性**: 使用 `cmd.exe /c` 执行 opencode 命令
+2. **流式处理**: 使用 buffer 处理跨数据块的 JSON 行
+3. **错误处理**: 添加完整的事件监听和错误处理
+4. **退出码检查**: 检查子进程退出码，非零则退出
+
+### 测试结果
+```bash
+node minimal-claude.js "1+1=?"
+# 输出: 2
+
+node minimal-claude.js "写一个hello world函数"
+# 输出:
+# ```python
+# def hello_world():
+#     print("Hello, World!")
+# ```
+```
+
+### 验证通过
+✅ 简单提示测试通过
+✅ 复杂提示测试通过
+✅ 流式输出正常工作
+✅ 错误处理正常工作
+
+---
+
 ## 2026-03-07 - 修复 opencode 集成问题
 
 ### 问题描述
