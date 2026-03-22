@@ -184,6 +184,20 @@ npm run start:cat
 node .\run-cat.js "先获取上下文，再写一句猫咖开场白，最后发到聊天室"
 ```
 
+注意：默认 prompt 会引导模型调用工具，但并不保证每次都真的触发 `cat_cafe_get_context` 和 `cat_cafe_post_message`。如果你看到客户端只是在终端里直接输出结果、服务端却没有出现 `[chatroom] received public message:`，通常说明这次模型没有实际调用 MCP 工具。
+
+做演示或验收时，建议使用更强约束的 prompt，明确要求：
+
+1. 必须先调用 `cat_cafe_get_context`
+2. 必须最后调用 `cat_cafe_post_message`
+3. 如果不调用工具，就算任务失败
+
+例如：
+
+```powershell
+node .\run-cat.js "你必须严格按以下步骤执行：1）先调用 cat_cafe_get_context；2）根据上下文写一首关于猫的短诗；3）最后必须调用 cat_cafe_post_message 把最终诗发送到聊天室；4）如果不调用工具，这个任务就算失败。不要只在终端输出答案，必须调用工具。"
+```
+
 ## 预期结果
 
 成功时你会看到：
