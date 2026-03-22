@@ -1,0 +1,16 @@
+{
+  "name": "cat-cafe",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Minimal opencode MCP callback demo for cat cafe.",
+  "main": "run-cat.js",
+  "scripts": {
+    "start:callback": "node callback-server.js",
+    "start:cat": "node run-cat.js",
+    "check": "node --check callback-server.js && node --check cat-cafe-mcp.js && node --check run-cat.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.18.1",
+    "zod": "^3.25.76"
+  }
+}
