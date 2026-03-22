@@ -1,5 +1,196 @@
 # 开发日志
 
+## 2026-03-22 - 增加 session 重置接口
+
+### 需求
+在自动续聊的基础上，增加显式的 session 管理能力，支持：
+
+1. 重置单个模型的会话
+2. 一次性清空全部会话
+
+### 实现方案
+
+#### 1. 增加 `resetSession(cli)`
+按模型别名删除对应的 session 记录：
+
+```javascript
+function resetSession(cli) {
+  if (!isSupportedCli(cli)) {
+    throw new Error(`不支持的 cli: ${cli}`);
+  }
+
+  const sessions = readSessions();
+  delete sessions[cli];
+  writeSessions(sessions);
+}
+```
+
+#### 2. 增加 `clearAllSessions()`
+统一清空 `.invoke-sessions.json` 中的所有记录：
+
+```javascript
+function clearAllSessions() {
+  const cleared = Object.keys(readSessions()).length;
+  writeSessions({});
+  return cleared;
+}
+```
+
+#### 3. 统一 CLI 校验
+新增 `isSupportedCli(cli)`，让 `invoke()` 和 `resetSession()` 共用同一套模型别名校验：
+
+```javascript
+function isSupportedCli(cli) {
+  return Object.prototype.hasOwnProperty.call(MODELS, cli);
+}
+```
+
+### 技术要点
+
+1. **显式重置能力**: 不再只能靠手动删除 `.invoke-sessions.json` 来清理会话
+2. **按模型隔离管理**: 支持只重置 `glm` 或只重置 `codex`
+3. **接口更完整**: `invoke.js` 现在同时导出调用、单个重置、批量清空三类能力
+
+### 使用方式
+
+```javascript
+const { invoke, resetSession, clearAllSessions } = require('./invoke');
+
+resetSession('glm');
+await invoke('glm', '重新开始');
+
+clearAllSessions();
+```
+
+### 验证通过
+✅ `resetSession(cli)` 已导出
+✅ `clearAllSessions()` 已导出
+✅ README 已同步更新示例
+
+## 2026-03-22 - 强化子进程超时与生命周期管理
+
+### 需求
+检查并修复 CLI 子进程调用中的稳定性问题，重点包括：
+
+1. 超时检测不能只看 stdout
+2. 长任务需要更合理的超时配置
+3. 超时后需要优雅终止子进程
+4. 父进程退出时需要清理子进程
+5. 错误信息需要足够详细，便于调试
+
+### 问题分析
+
+原实现虽然已经具备基础的 NDJSON 解析能力，但仍存在以下风险：
+
+1. **活跃信号不完整**：stderr 虽然会打印，但不会刷新超时活动时间
+2. **超时策略过于简单**：固定 120 秒不适合复杂推理或工具调用任务
+3. **缺少优雅退出**：没有 `SIGTERM -> 等待 -> SIGKILL` 的分级清理
+4. **缺少父进程信号处理**：收到 `SIGINT`/`SIGTERM` 时不会主动回收子进程
+5. **错误上下文不足**：异常退出时缺少模型、session、stderr 摘要等调试信息
+
+### 实现方案
+
+#### 1. 引入双层超时配置
+新增默认空闲超时与总时长超时：
+
+```javascript
+const DEFAULT_IDLE_TIMEOUT_MS = 10 * 60 * 1000;
+const DEFAULT_HARD_TIMEOUT_MS = 30 * 60 * 1000;
+const FORCE_KILL_GRACE_MS = 5 * 1000;
+```
+
+并让 `invoke` 支持通过第三个参数覆盖：
+
+```javascript
+await invoke('codex', '请分析这个问题', {
+  idleTimeoutMs: 15 * 60 * 1000,
+  hardTimeoutMs: 45 * 60 * 1000
+});
+```
+
+#### 2. 同时监听 stdout 与 stderr 活跃信号
+只监听 stdout 容易把 thinking 或工具调用误判为空闲，因此改为双通道刷新活动时间：
+
+```javascript
+const markActivity = () => {
+  lastActivity = Date.now();
+  refreshIdleTimer();
+};
+
+child.stdout.on('data', () => {
+  markActivity();
+});
+
+child.stderr.on('data', () => {
+  markActivity();
+});
+```
+
+#### 3. 增加优雅终止机制
+超时或父进程信号触发时，先发 `SIGTERM`，等待 5 秒后仍未退出再发 `SIGKILL`：
+
+```javascript
+const terminateChild = (reason) => {
+  child.kill('SIGTERM');
+
+  forceKillTimer = setTimeout(() => {
+    child.kill('SIGKILL');
+  }, FORCE_KILL_GRACE_MS);
+};
+```
+
+#### 4. 增加父进程信号清理
+对 `SIGINT`、`SIGTERM` 和 `exit` 做统一清理，降低残留子进程风险：
+
+```javascript
+process.on('SIGINT', () => {
+  terminateChild('parent-sigint');
+});
+
+process.on('SIGTERM', () => {
+  terminateChild('parent-sigterm');
+});
+```
+
+#### 5. 补充错误上下文
+为错误对象附加更多调试信息：
+
+```javascript
+const error = new Error(message);
+error.details = {
+  cli,
+  model,
+  sessionID,
+  args,
+  idleTimeoutMs,
+  hardTimeoutMs,
+  stderrTail
+};
+```
+
+### 技术要点
+
+1. **空闲超时与总时长超时分离**：避免单一超时策略误杀正常任务
+2. **stderr 也算活跃输出**：更适合 LLM CLI 的 thinking / tool-call 场景
+3. **优雅退出优先**：先 `SIGTERM` 再 `SIGKILL`，减少异常中断副作用
+4. **错误可诊断性增强**：失败后可以直接看到模型、session、超时和 stderr 摘要
+5. **兼容现有调用方式**：保留 `await invoke('glm', '你好')`，仅额外支持 `options`
+
+### 验证结果
+
+```bash
+node --check invoke.js
+node --check minimal-glm.js
+node --check minimal-codex.js
+```
+
+### 验证通过
+✅ 双通道活跃检测已接入
+✅ 空闲超时与总时长超时已支持
+✅ 子进程优雅终止机制已接入
+✅ 父进程退出清理逻辑已接入
+✅ 错误信息已包含调试上下文
+
 ## 2026-03-22 - 抽取共享 invoke 并支持会话续聊
 
 ### 需求
