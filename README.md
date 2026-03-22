@@ -1,243 +1,324 @@
 # cat-cafe
 
-一个最小化的 Node.js 调用封装，用 `opencode` 统一访问两套模型：
+一个最小的 MCP 回传演示项目，用来理解“AI 内部输出”和“AI 主动公开发言”之间的区别。
 
-- `glm` -> `bailian-coding-plan/glm-5`
-- `codex` -> `codex_service/gpt-5.4`
+当前版本基于 `opencode` 运行，核心演示链路是：
 
-项目核心是 `invoke(cli, prompt, options)`，支持：
+- `run-cat.js` 启动 `opencode run --format json`
+- `opencode` 在本次会话里加载本地 MCP 服务 `cat-cafe-mcp.js`
+- MCP 工具再回调 `callback-server.js`
+- 终端 2 显示内部过程，终端 1 只显示 AI 主动发送的公开内容
 
-- 按模型别名调用 `opencode run --format json`
-- 流式输出模型文本
-- 返回完整回复内容
-- 自动记住会话，并在下次调用时继续对话
-- 同时用 stdout 和 stderr 作为活跃信号，避免误判超时
-- 支持空闲超时、总时长超时，以及优雅终止子进程
-
-## 文件结构
+## 当前文件结构
 
 ```text
 .
-├─ invoke.js            # 共享调用入口
-├─ minimal-glm.js       # GLM 命令行入口
-├─ minimal-codex.js     # Codex 命令行入口
-├─ DEVELOPMENT_LOG.md   # 开发日志
-└─ .invoke-sessions.json  # 运行后自动生成，用于保存 session
+├─ callback-server.js   # 回调服务端，模拟聊天室
+├─ cat-cafe-mcp.js      # 本地 MCP Server，提供两个工具
+├─ run-cat.js           # 用 opencode 跑任务并打印内部输出
+├─ DEVELOPMENT_LOG.md   # 当前开发日志
+├─ his/                 # 已归档的历史脚本和旧日志
+├─ package.json
+└─ package-lock.json
 ```
 
-## 运行前提
+## 核心机制
 
-需要本机已安装并可直接执行：
+这个 demo 主要展示两条不同的输出通道：
+
+### 1. 内部输出
+
+`run-cat.js` 会解析 `opencode run --format json` 的 NDJSON 事件，并把这些内容直接打印到当前终端。
+
+这里能看到的通常包括：
+
+- 文本输出 `text`
+- 推理片段 `reasoning`
+- 工具调用 `tool_use`
+- 步骤开始/结束 `step_start`、`step_finish`
+
+这部分相当于“AI 在工作时的内部过程”。
+
+### 2. 主动公开发言
+
+AI 如果决定调用 `cat_cafe_post_message`，`cat-cafe-mcp.js` 会发 HTTP 请求到 `callback-server.js`：
+
+- `POST /api/callbacks/post-message`
+
+服务端验证 `invocationId` 和 `callbackToken` 后，会把消息打印到另一个终端，模拟“消息发到了聊天室”。
+
+这部分相当于“AI 选择公开给用户看的内容”。
+
+## 依赖
+
+运行前需要本机具备：
 
 - `node`
 - `opencode`
 
-同时需要在 `C:\Users\chens\.config\opencode\opencode.json` 中配置好对应 provider，当前项目依赖：
+并且当前 `opencode` 所使用的模型/provider 在你的环境里可正常调用。
 
-- `bailian-coding-plan`
-- `codex_service`
+项目依赖：
 
-## 命令行用法
+- `@modelcontextprotocol/sdk`
+- `zod`
 
-### 调用 GLM
-
-```bash
-node minimal-glm.js "你好"
-```
-
-### 调用 Codex 模型
+如果依赖还没装，可以运行：
 
 ```bash
-node minimal-codex.js "你好"
+npm install
 ```
 
-这两个脚本都会：
+## 三个核心文件
 
-- 把提示词传给 `opencode`
-- 实时打印流式输出
-- 自动复用上一次该模型对应的 session
+### `callback-server.js`
 
-## 编程方式调用
+原生 `http` 服务器，监听 `3200` 端口。
 
-### 基本用法
+提供两个接口：
 
-```javascript
-const { invoke } = require('./invoke');
+- `POST /api/callbacks/post-message`
+- `GET /api/callbacks/thread-context`
 
-async function main() {
-  await invoke('glm', '你好');
-  await invoke('codex', '你好');
-}
+启动时会生成：
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+- `invocationId`
+- `callbackToken`
+
+并打印到终端，用于本次调用链鉴权。
+
+### `cat-cafe-mcp.js`
+
+最小 MCP Server，提供两个工具：
+
+- `cat_cafe_post_message(content)`
+- `cat_cafe_get_context()`
+
+它会从环境变量中读取：
+
+- `CAT_CAFE_API_URL`
+- `CAT_CAFE_INVOCATION_ID`
+- `CAT_CAFE_CALLBACK_TOKEN`
+
+然后通过 HTTP 与 `callback-server.js` 通信。
+
+### `run-cat.js`
+
+运行入口，负责：
+
+- 调用 `opencode run --format json --model ...`
+- 通过 `OPENCODE_CONFIG_CONTENT` 为这次子进程临时注入 MCP 配置
+- 加载本地 `cat-cafe-mcp.js`
+- 解析 `opencode` 的 NDJSON 输出并打印到当前终端
+
+默认模型是：
+
+```text
+bailian-coding-plan/glm-5
 ```
 
-### 继续同一个会话
+也可以通过环境变量覆盖：
 
-```javascript
-const { invoke } = require('./invoke');
-
-async function main() {
-  await invoke('glm', '你好');
-  await invoke('glm', '继续刚才的话题');
-
-  await invoke('codex', '你好');
-  await invoke('codex', '继续展开');
-}
-
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+```powershell
+$env:CAT_CAFE_MODEL = "codex_service/gpt-5.4"
 ```
 
-`invoke(cli, prompt, options)` 的特性：
+## 运行方式
 
-- `cli` 目前支持 `glm` 和 `codex`
-- `prompt` 为空时默认使用 `你好`
-- 返回 `Promise<string>`，结果为完整回复文本
-- 调用过程中会同步把流式文本打印到 stdout
-- `options.idleTimeoutMs` 可覆盖空闲超时，默认 10 分钟
-- `options.hardTimeoutMs` 可覆盖总时长超时，默认 30 分钟
+### PowerShell
 
-## Session 管理
+终端 1：启动回调服务端
 
-除了自动续聊，`invoke.js` 还导出了两个手动管理会话的接口：
-
-- `resetSession(cli)`：删除指定模型的 session
-- `clearAllSessions()`：清空所有已保存的 session
-
-### 重置单个模型会话
-
-```javascript
-const { invoke, resetSession } = require('./invoke');
-
-async function main() {
-  resetSession('glm');
-  await invoke('glm', '重新开始一个新对话');
-}
-
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+```powershell
+node .\callback-server.js
 ```
 
-### 清空所有会话
+你会看到类似：
 
-```javascript
-const { clearAllSessions } = require('./invoke');
-
-const cleared = clearAllSessions();
-console.log(`cleared sessions: ${cleared}`);
+```text
+Server listening on :3200
+invocationId: xxx
+callbackToken: yyy
 ```
 
-### 自定义超时
+终端 2：设置环境变量并启动 runner
 
-```javascript
-const { invoke } = require('./invoke');
-
-async function main() {
-  await invoke('codex', '请分析这个问题', {
-    idleTimeoutMs: 15 * 60 * 1000,
-    hardTimeoutMs: 45 * 60 * 1000
-  });
-}
-
-main().catch((error) => {
-  console.error(error.message);
-  console.error(error.details);
-  process.exit(1);
-});
+```powershell
+$env:CAT_CAFE_API_URL = "http://localhost:3200"
+$env:CAT_CAFE_INVOCATION_ID = "xxx"
+$env:CAT_CAFE_CALLBACK_TOKEN = "yyy"
+node .\run-cat.js
 ```
 
-## Session 机制
+如果要切模型：
 
-项目会在根目录生成 `.invoke-sessions.json`，按 `cli` 分别保存 session：
-
-```json
-{
-  "glm": {
-    "sessionID": "ses_xxx",
-    "updatedAt": "2026-03-22T07:30:00.000Z"
-  },
-  "codex": {
-    "sessionID": "ses_yyy",
-    "updatedAt": "2026-03-22T07:31:00.000Z"
-  }
-}
+```powershell
+$env:CAT_CAFE_API_URL = "http://localhost:3200"
+$env:CAT_CAFE_INVOCATION_ID = "xxx"
+$env:CAT_CAFE_CALLBACK_TOKEN = "yyy"
+$env:CAT_CAFE_MODEL = "codex_service/gpt-5.4"
+node .\run-cat.js
 ```
 
-下次调用时，`invoke.js` 会自动：
+### npm scripts
 
-1. 读取对应 `cli` 的 `sessionID`
-2. 调用 `opencode run --session <sessionID>`
-3. 从新的 JSON 事件里继续提取并更新 `sessionID`
+```bash
+npm run start:callback
+npm run start:cat
+```
 
-这意味着：
+注意：`npm run start:cat` 仍然依赖你先在当前 shell 中设置好回调相关环境变量。
 
-- `glm` 和 `codex` 各自独立续聊
-- 不需要手动管理 `--session`
-- 可以通过 `resetSession(cli)` 重置单个会话
-- 可以通过 `clearAllSessions()` 清空全部会话
-- 删除 `.invoke-sessions.json` 仍然可以直接重置所有会话
+## 默认提示词
 
-## 实现说明
+如果不传命令行参数，`run-cat.js` 会使用一段默认提示词，让模型：
 
-`invoke.js` 的核心流程：
+1. 先调用 `cat_cafe_get_context`
+2. 写一首关于猫的诗
+3. 再调用 `cat_cafe_post_message` 把最终诗句发到聊天室
+4. 不把思考过程发出去
 
-1. 根据 `cli` 选择模型名
-2. 构造 `opencode run --format json --model ...` 命令
-3. 如果本地已有 session，则自动追加 `--session`
-4. 为 stdout 和 stderr 同时挂活跃监听，刷新空闲超时
-5. 逐行解析 NDJSON 输出
-6. 遇到 `type === "text"` 且存在 `part.text` 时，输出并收集文本
-7. 超时时先发 `SIGTERM`，等待 5 秒后再 `SIGKILL`
-8. 进程结束后返回完整文本，或抛出带上下文的错误
+你也可以直接传自己的 prompt：
 
-## 超时与进程清理
+```powershell
+node .\run-cat.js "先获取上下文，再写一句猫咖开场白，最后发到聊天室"
+```
 
-当前实现包含两层超时控制：
+## 预期结果
 
-- `idleTimeoutMs`：空闲超时，如果 stdout/stderr 在指定时间内都没有新输出，则触发终止
-- `hardTimeoutMs`：总时长超时，无论是否有输出，到达上限后都触发终止
+成功时你会看到：
 
-终止顺序如下：
+- 终端 2：`opencode` 的内部过程、推理、工具调用
+- 终端 1：只有最终通过 `cat_cafe_post_message` 发回来的公开内容
 
-1. 发送 `SIGTERM`
-2. 等待 5 秒
-3. 子进程仍未退出时发送 `SIGKILL`
+这就是这个项目想说明的重点：
 
-此外，父进程收到 `SIGINT`、`SIGTERM` 或退出时，也会尝试清理当前子进程。
+- 子进程终端里看到的是“AI 全部过程”
+- 回调服务里看到的是“AI 主动选择公开的内容”
 
-## 错误信息
+## 故障排查
 
-失败时，`invoke()` 抛出的错误对象会附带 `error.details`，包含：
+### 1. `opencode` 找不到
 
-- `cli`
-- `model`
-- `sessionID`
-- `command` 与 `args`
-- `idleTimeoutMs` / `hardTimeoutMs`
-- `terminationReason`
-- `runtimeMs`
-- `stderrTail`
+如果运行 `node .\run-cat.js` 时提示找不到 `opencode`，先在当前终端确认：
 
-这能帮助定位是模型退出、超时终止、父进程中断，还是底层启动失败。
+```powershell
+opencode --version
+```
+
+如果这条命令本身都不能执行，说明问题不在项目，而在本机环境变量或 `opencode` 安装。
+
+### 2. 回调服务没有启动
+
+如果 `run-cat.js` 启动后工具调用失败，先确认终端 1 的 `callback-server.js` 还在运行，并且确实打印了：
+
+- `invocationId`
+- `callbackToken`
+
+如果终端 1 已关闭，终端 2 里的 MCP 工具就无法成功回调。
+
+### 3. 环境变量没有设置到当前 PowerShell 会话
+
+PowerShell 的环境变量只对当前会话生效。请确认你是在运行 `node .\run-cat.js` 的同一个终端里设置的：
+
+```powershell
+$env:CAT_CAFE_API_URL = "http://localhost:3200"
+$env:CAT_CAFE_INVOCATION_ID = "xxx"
+$env:CAT_CAFE_CALLBACK_TOKEN = "yyy"
+```
+
+可以直接检查：
+
+```powershell
+echo $env:CAT_CAFE_API_URL
+echo $env:CAT_CAFE_INVOCATION_ID
+echo $env:CAT_CAFE_CALLBACK_TOKEN
+```
+
+### 4. 模型不可用或 provider 配置不对
+
+`run-cat.js` 默认用的是：
+
+```text
+bailian-coding-plan/glm-5
+```
+
+如果你本机 `opencode` 当前没有这个 provider/model 的可用配置，任务会在 `opencode` 层失败。你可以先单独验证：
+
+```powershell
+opencode run --format json --model bailian-coding-plan/glm-5 "你好"
+```
+
+如果这一步都失败，先修本机 `opencode` 配置，再回到这个 demo。
+
+### 5. MCP 工具没有被调用
+
+如果终端 2 只有普通文本输出，但终端 1 没收到任何消息，说明模型可能没有真的调用：
+
+- `cat_cafe_get_context`
+- `cat_cafe_post_message`
+
+先看终端 2 里是否出现：
+
+- `[tool_use] cat_cafe_get_context`
+- `[tool_use] cat_cafe_post_message`
+
+如果没有，通常是模型没有遵循提示词，或者当前模型工具调用能力不足。你可以把 prompt 写得更明确一些。
+
+### 6. MCP 服务启动失败
+
+如果 `cat-cafe-mcp.js` 依赖缺失，或者 SDK 无法加载，`opencode` 在工具侧会失败。先确认依赖已经安装：
+
+```powershell
+npm install
+npm run check
+```
+
+如果 `npm run check` 正常，但运行时仍失败，重点看终端 2 的 stderr 输出。
+
+### 7. 回调鉴权失败（401）
+
+如果回调服务返回 `401 unauthorized`，说明：
+
+- `CAT_CAFE_INVOCATION_ID` 不匹配
+- `CAT_CAFE_CALLBACK_TOKEN` 不匹配
+
+最常见原因是：你重启了 `callback-server.js`，但终端 2 还在用旧值。重启服务后，要重新复制一遍新的 `invocationId` 和 `callbackToken`。
+
+### 8. 想确认现在到底走的是哪个模型
+
+默认模型来自 `run-cat.js`：
+
+```text
+bailian-coding-plan/glm-5
+```
+
+如果你设置了：
+
+```powershell
+$env:CAT_CAFE_MODEL = "codex_service/gpt-5.4"
+```
+
+那本次运行会覆盖默认值。
+
+### 9. 如何判断 demo 是否真正成功
+
+最小成功标准是同时满足：
+
+1. 终端 2 出现 `opencode` 的内部事件输出
+2. 终端 2 出现 `cat_cafe_post_message` 的工具调用记录
+3. 终端 1 打印出最终公开内容
+
+如果只有第 1 条成立，那说明模型在运行，但“主动发言”这条链路还没打通。
+
+## 历史文件
+
+旧版本里与 `invoke.js`、`minimal-glm.js`、`minimal-codex.js` 相关的封装已经移到 `his/`，不再参与当前 MCP demo 的运行。
 
 ## 校验命令
 
 ```bash
-node --check invoke.js
-node --check minimal-glm.js
-node --check minimal-codex.js
+node --check callback-server.js
+node --check cat-cafe-mcp.js
+node --check run-cat.js
 ```
-
-## 注意事项
-
-- 当前项目是最小封装，没有 `package.json`、测试框架或构建脚本
-- 运行依赖本机已有可用的 `opencode` 命令
-- 如果 provider 配置或本地环境变化，模型调用可能失败
