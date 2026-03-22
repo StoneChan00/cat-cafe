@@ -1,5 +1,127 @@
 # 开发日志
 
+## 2026-03-22 - 抽取共享 invoke 并支持会话续聊
+
+### 需求
+将重复的模型调用脚本抽取成统一的 `invoke(cli, prompt)` 接口，同时支持：
+
+1. `glm` -> `bailian-coding-plan/glm-5`
+2. `codex` -> `codex_service/gpt-5.4`
+3. 记住各自的会话，下次调用时自动继续对话
+
+### 实现方案
+
+#### 1. 抽取共享调用模块
+新增 `invoke.js`，统一处理模型映射、子进程启动、JSON 流解析和错误处理：
+
+```javascript
+const MODELS = {
+  glm: 'bailian-coding-plan/glm-5',
+  codex: 'codex_service/gpt-5.4'
+};
+
+function invoke(cli, prompt) {
+  const model = MODELS[cli];
+  // 使用 opencode run --format json 调用对应模型
+}
+```
+
+#### 2. 保留两个极简入口脚本
+将原有重复逻辑收敛到共享模块后，两个入口只负责传入不同的 `cli`：
+
+```javascript
+const { invoke } = require('./invoke');
+
+invoke('glm', process.argv[2] || '你好').catch((error) => {
+  console.error(`执行错误: ${error.message}`);
+  process.exit(1);
+});
+```
+
+```javascript
+const { invoke } = require('./invoke');
+
+invoke('codex', process.argv[2] || '你好').catch((error) => {
+  console.error(`执行错误: ${error.message}`);
+  process.exit(1);
+});
+```
+
+#### 3. 增加 session 持久化
+为每个 `cli` 独立存储 `sessionID`，并在下次调用时自动追加 `--session <id>`：
+
+```javascript
+const SESSION_FILE = path.join(__dirname, '.invoke-sessions.json');
+
+function getSessionId(cli) {
+  const sessions = readSessions();
+  return sessions[cli]?.sessionID || null;
+}
+
+function setSessionId(cli, sessionID) {
+  sessions[cli] = {
+    sessionID,
+    updatedAt: new Date().toISOString()
+  };
+}
+```
+
+#### 4. 从流式事件中提取 sessionID
+`opencode run --format json` 的每条事件都可能带有 `sessionID`，因此在解析输出时顺手落盘：
+
+```javascript
+function handleEvent(cli, data, chunks) {
+  if (data.sessionID) {
+    setSessionId(cli, data.sessionID);
+  }
+
+  if (data.type === 'text' && data.part?.text) {
+    chunks.push(data.part.text);
+    process.stdout.write(data.part.text);
+  }
+}
+```
+
+### 技术要点
+
+1. **统一入口**: 用 `invoke(cli, prompt)` 消除 `minimal-glm.js` 与 `minimal-codex.js` 的重复逻辑
+2. **模型隔离**: `glm` 和 `codex` 使用独立的模型映射与独立的 session
+3. **续聊机制**: 通过持久化 `sessionID` 并传递 `--session` 实现稳定续聊
+4. **兼容现有调用链**: 继续使用 `opencode run --format json`，不引入新的 CLI 依赖
+
+### 当前文件结构
+
+- `invoke.js` - 共享调用与 session 管理
+- `minimal-glm.js` - GLM 入口脚本
+- `minimal-codex.js` - Codex 模型入口脚本
+- `.invoke-sessions.json` - 运行后自动生成的会话记录文件
+
+### 使用方式
+
+```javascript
+const { invoke } = require('./invoke');
+
+await invoke('glm', '你好');
+await invoke('glm', '继续刚才的话题');
+
+await invoke('codex', '你好');
+await invoke('codex', '继续展开');
+```
+
+### 验证结果
+
+```bash
+node --check invoke.js
+node --check minimal-glm.js
+node --check minimal-codex.js
+```
+
+### 验证通过
+✅ 共享 `invoke(cli, prompt)` 接口已抽取
+✅ `glm` 与 `codex` 双入口已拆分
+✅ session 自动持久化与续聊逻辑已接入
+✅ 三个脚本语法检查通过
+
 ## 2026-03-16 - 将 execSync 改为 spawn
 
 ### 需求
