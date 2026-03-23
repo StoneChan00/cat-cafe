@@ -158,7 +158,12 @@ class OpenCodeAgentRunner {
         }
         // 收集工具调用
         if (event.type === 'tool_use' && event.part?.tool) {
-            toolCalls.push(event.part.tool);
+            // 去除可能的 MCP 前缀 (如 "cat-cafe_cat_cafe_get_context" -> "cat_cafe_get_context")
+            const toolName = event.part.tool;
+            const normalizedToolName = toolName.includes('_') && toolName.includes('-')
+                ? toolName.split('_').slice(1).join('_') // 去除 MCP 服务名前缀
+                : toolName;
+            toolCalls.push(normalizedToolName);
         }
         // 处理错误
         if (event.type === 'error') {

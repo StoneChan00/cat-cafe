@@ -10,6 +10,7 @@
     "dev": "tsx src/index.ts",
     "check": "tsc --noEmit",
     "test": "node tests/integration.test.js",
+    "test:e2e": "node test-quick.js",
     "test:modules": "node test-modules.js",
     "clean": "rimraf dist"
   },

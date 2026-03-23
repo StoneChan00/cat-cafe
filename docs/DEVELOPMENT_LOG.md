@@ -51,7 +51,7 @@
 
 ---
 
-## Phase 1：最小多 Agent 协作内核 🚧 进行中
+## Phase 1：最小多 Agent 协作内核 ✅ 完成
 
 ### 目标
 做出"像 Cat Café"的最小版本
@@ -177,17 +177,33 @@ src/
 
 **集成测试：** ✅ 通过 (11/11)
 
+**端到端测试：** ✅ 通过
+
 **测试覆盖：**
 - ThreadStore 持久化 (创建、消息添加)
 - Router 功能 (@agent 解析、中文别名)
 - A2A 触发提取
 - Worklist Engine (创建、深度限制)
 - Prompt Builder (生成、上下文包含)
+- MCP 工具调用 (get_context, post_message)
 
-**待验证：**
-- 实际运行测试（需要 opencode 环境）
-- A2A 链路测试
-- 超时/取消测试
+**已发现问题：**
+1. opencode 会给 MCP 工具名添加前缀 (如 `cat-cafe_cat_cafe_get_context`)
+   - 解决：在 Runner 中处理前缀去除
+2. 模型响应时间可能较长，需要合理设置超时
+   - 默认超时：空闲 10 分钟，硬超时 30 分钟
+
+**运行验证：**
+```bash
+# 快速验证
+node test-quick.js
+
+# 完整模块测试
+npm test
+
+# 实际运行
+npm start
+```
 
 ### 2026-03-22 Phase 1 开发启动
 

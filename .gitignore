@@ -1,3 +1,11 @@
 node_modules/
+dist/
 .invoke-sessions.json
 npm-debug.log*
+
+# Cat Cafe data
+.cat-cafe-data/
+.test-data/
+
+# Test files (optional, can be committed)
+# test-*.js
