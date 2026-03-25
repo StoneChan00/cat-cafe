@@ -49,6 +49,7 @@ class OpenCodeAgentRunner {
     child = null;
     sessionID = null;
     aborted = false;
+    terminateReason = null;
     idleTimer = null;
     hardTimer = null;
     forceKillTimer = null;
@@ -60,15 +61,24 @@ class OpenCodeAgentRunner {
         const { prompt, model, workingDirectory = process.cwd(), callbackEnv, timeout = {} } = options;
         const idleTimeoutMs = timeout.idleMs || DEFAULT_IDLE_TIMEOUT_MS;
         const hardTimeoutMs = timeout.hardMs || DEFAULT_HARD_TIMEOUT_MS;
-        // 获取 MCP Server 路径
-        const mcpServerPath = require.resolve('../mcp/cat-cafe-mcp.js');
+        // 获取 MCP Server 路径 - 兼容 tsx 开发模式和编译模式
+        let mcpServerPath;
+        try {
+            // 先尝试相对于当前文件的路径 (编译模式)
+            mcpServerPath = require.resolve('../mcp/cat-cafe-mcp.js');
+        }
+        catch {
+            // tsx 开发模式：使用 dist 目录下的编译文件
+            // __dirname 在 tsx 下指向 src/runner，需要往上两级再进入 dist
+            mcpServerPath = require.resolve('../../dist/mcp/cat-cafe-mcp.js');
+        }
         const mcpConfig = buildMcpConfig(mcpServerPath);
         // 构建命令
         const { command, args } = buildCommand(prompt, model);
         // 结果收集
         const textChunks = [];
         const toolCalls = [];
-        let error = null;
+        const errorRef = { value: null };
         // 启动子进程
         this.child = (0, child_process_1.spawn)(command, args, {
             cwd: workingDirectory,
@@ -96,7 +106,7 @@ class OpenCodeAgentRunner {
                     continue;
                 try {
                     const event = JSON.parse(line);
-                    this.handleEvent(event, textChunks, toolCalls, onEvent);
+                    this.handleEvent(event, textChunks, toolCalls, onEvent, errorRef);
                 }
                 catch {
                     // 忽略 JSON 解析错误
@@ -119,18 +129,24 @@ class OpenCodeAgentRunner {
                 if (stdoutBuffer.trim()) {
                     try {
                         const event = JSON.parse(stdoutBuffer);
-                        this.handleEvent(event, textChunks, toolCalls, onEvent);
+                        this.handleEvent(event, textChunks, toolCalls, onEvent, errorRef);
                     }
                     catch {
                         // 忽略
                     }
                 }
+                // 构建错误信息（包括超时原因）
+                let errorMessage = errorRef.value ?? undefined;
+                if (this.aborted && !errorMessage) {
+                    errorMessage = this.terminateReason ?? 'Aborted by user';
+                }
                 resolve({
-                    success: !this.aborted && code === 0,
+                    success: !this.aborted && code === 0 && !errorRef.value,
                     finalText: textChunks.join(''),
                     toolCalls,
                     sessionID: this.sessionID || undefined,
-                    error: error || (this.aborted ? 'Aborted by user' : undefined)
+                    error: errorMessage,
+                    terminateReason: this.terminateReason ?? undefined
                 });
             });
             this.child?.on('error', (err) => {
@@ -147,7 +163,7 @@ class OpenCodeAgentRunner {
     /**
      * 处理事件
      */
-    handleEvent(event, textChunks, toolCalls, onEvent) {
+    handleEvent(event, textChunks, toolCalls, onEvent, errorRef) {
         // 提取 sessionID
         if (event.sessionID) {
             this.sessionID = event.sessionID;
@@ -165,9 +181,17 @@ class OpenCodeAgentRunner {
                 : toolName;
             toolCalls.push(normalizedToolName);
         }
-        // 处理错误
+        // 处理错误 - 记录错误并触发终止
         if (event.type === 'error') {
             console.error('[runner error]', event.error);
+            // 记录错误，让主流程知道执行失败
+            if (errorRef) {
+                errorRef.value = typeof event.error === 'string'
+                    ? event.error
+                    : JSON.stringify(event.error);
+            }
+            // 终止进程以避免挂起
+            this.terminate('api-error');
         }
         // 回调
         onEvent?.(event);
@@ -218,6 +242,7 @@ class OpenCodeAgentRunner {
             return;
         console.error(`[runner] terminating due to: ${reason}`);
         this.aborted = true;
+        this.terminateReason = reason;
         // 先发 SIGTERM
         this.child.kill('SIGTERM');
         // 5 秒后强制 kill

@@ -162,6 +162,7 @@ export interface RunnerResult {
   toolCalls: string[];
   sessionID?: string;
   error?: string;
+  terminateReason?: string;
   publicMessage?: string;
 }
 

@@ -14,6 +14,7 @@ export declare class OpenCodeAgentRunner {
     private child;
     private sessionID;
     private aborted;
+    private terminateReason;
     private idleTimer;
     private hardTimer;
     private forceKillTimer;

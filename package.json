@@ -5,9 +5,11 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node -e \"require('fs').cpSync('src/web/index.html', 'dist/web/index.html', {recursive:true})\"",
     "start": "node dist/index.js",
+    "web": "node dist/web-cli.js",
     "dev": "tsx src/index.ts",
+    "dev:web": "tsx src/web-cli.ts",
     "check": "tsc --noEmit",
     "test": "node tests/integration.test.js",
     "test:e2e": "node test-quick.js",

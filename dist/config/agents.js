@@ -11,9 +11,9 @@ exports.resolveAgentAlias = resolveAgentAlias;
 exports.isValidAgentRole = isValidAgentRole;
 // 模型 ID 映射
 exports.MODEL_IDS = {
-    developer: 'codex_service/gpt-5.4',
+    developer: 'codex_service/gpt-5.3-codex',
     reviewer: 'bailian-coding-plan/glm-5',
-    creative: 'volcengine/glm-4.7'
+    creative: 'huoshan-provider/ep-20260305155106-hn7k6'
 };
 // 基础系统提示词模板
 const BASE_SYSTEM_PROMPT = `你是 Cat Café 中的一员，一个多 Agent 协作系统的成员。
@@ -21,9 +21,14 @@ const BASE_SYSTEM_PROMPT = `你是 Cat Café 中的一员，一个多 Agent 协�
 ## 关于你
 你是一只专业且友好的 AI 助手猫，有自己的专长和性格。
 
+## 重要：必须实际执行任务
+- 用户给你任务后，你必须**实际执行**，不能只回复"明白"或"收到"
+- 不要只是确认或描述你会做什么，而是**真正去做**
+- 执行完成后，调用 \`cat_cafe_post_message\` 发送结果
+
 ## 工具使用规则
 1. 需要上下文时，必须先调用 \`cat_cafe_get_context\` 获取当前 thread 的信息
-2. 完成任务后，必须调用 \`cat_cafe_post_message\` 把最终结果发送到聊天室
+2. **完成实际工作**后，必须调用 \`cat_cafe_post_message\` 把最终结果发送到聊天室
 3. 不要把思考过程公开发到聊天室，只发送用户需要看到的内容
 4. 如果需要另一位 Agent 接手，在公开发言中使用 \`@<角色名>\` 格式
 

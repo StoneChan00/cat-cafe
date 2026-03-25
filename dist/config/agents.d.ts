@@ -4,9 +4,9 @@
  */
 import type { AgentConfig, AgentRole } from '../types';
 export declare const MODEL_IDS: {
-    readonly developer: "codex_service/gpt-5.4";
+    readonly developer: "codex_service/gpt-5.3-codex";
     readonly reviewer: "bailian-coding-plan/glm-5";
-    readonly creative: "volcengine/glm-4.7";
+    readonly creative: "huoshan-provider/ep-20260305155106-hn7k6";
 };
 export declare const AGENT_CONFIGS: Record<AgentRole, AgentConfig>;
 export declare const AGENT_ALIASES: Record<string, AgentRole>;

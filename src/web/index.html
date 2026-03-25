@@ -1,0 +1,1025 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cat Cafe · 猫咖聊天室</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&family=Nunito:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #f5ebe0;
+        --surface: #fffaf5;
+        --ink: #3a2b21;
+        --ink-muted: #8b7355;
+        --border: #e8d6bd;
+        --shadow-sm: 0 2px 8px rgba(82, 56, 34, 0.08);
+        --shadow-md: 0 8px 24px rgba(82, 56, 34, 0.12);
+        --shadow-lg: 0 16px 40px rgba(82, 56, 34, 0.16);
+        --radius-full: 999px;
+        --radius-lg: 18px;
+        --radius-md: 12px;
+        --radius-sm: 8px;
+        --space-1: 4px;
+        --space-2: 8px;
+        --space-3: 12px;
+        --space-4: 16px;
+        --space-5: 20px;
+        --space-6: 24px;
+        --space-8: 32px;
+        --dev: #3b82f6;
+        --dev-bg: #eff6ff;
+        --dev-border: #bfdbfe;
+        --reviewer: #10b981;
+        --reviewer-bg: #ecfdf5;
+        --reviewer-border: #a7f3d0;
+        --creative: #8b5cf6;
+        --creative-bg: #f5f3ff;
+        --creative-border: #c4b5fd;
+        --user-bg: #fef3c7;
+        --user-border: #fcd34d;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Nunito", "Noto Sans SC", sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Header */
+      .header {
+        background: linear-gradient(180deg, rgba(255, 250, 245, 0.98), rgba(255, 250, 245, 0.92));
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border);
+        padding: var(--space-4) var(--space-6);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+
+      .header-inner {
+        max-width: 900px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        gap: var(--space-4);
+      }
+
+      .logo {
+        font-family: "Baloo 2", sans-serif;
+        font-size: 1.5rem;
+        color: var(--ink);
+      }
+
+      .logo-icon {
+        font-size: 1.8rem;
+      }
+
+      .header-info {
+        flex: 1;
+      }
+
+      .header-title {
+        font-weight: 700;
+        font-size: 1.1rem;
+      }
+
+      .header-subtitle {
+        font-size: 0.85rem;
+        color: var(--ink-muted);
+      }
+
+      .header-status {
+        display: flex;
+        gap: var(--space-2);
+        font-size: 0.8rem;
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #10b981;
+        animation: pulse 2s ease-in-out infinite;
+      }
+
+      .status-dot.running {
+        background: #f59e0b;
+      }
+
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+      }
+
+      /* Chat Container */
+      .chat-container {
+        flex: 1;
+        max-width: 900px;
+        width: 100%;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        padding: var(--space-4);
+      }
+
+      /* Messages Area */
+      .messages-area {
+        flex: 1;
+        overflow-y: auto;
+        padding: var(--space-4) 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-5);
+      }
+
+      .message {
+        display: flex;
+        gap: var(--space-3);
+        max-width: 85%;
+        animation: messageIn 0.3s ease-out;
+      }
+
+      @keyframes messageIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .message.user {
+        align-self: flex-end;
+        flex-direction: row-reverse;
+      }
+
+      .avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        font-weight: 700;
+      }
+
+      .avatar.developer {
+        background: var(--dev-bg);
+        border: 2px solid var(--dev-border);
+        color: var(--dev);
+      }
+
+      .avatar.reviewer {
+        background: var(--reviewer-bg);
+        border: 2px solid var(--reviewer-border);
+        color: var(--reviewer);
+      }
+
+      .avatar.creative {
+        background: var(--creative-bg);
+        border: 2px solid var(--creative-border);
+        color: var(--creative);
+      }
+
+      .avatar.user {
+        background: var(--user-bg);
+        border: 2px solid var(--user-border);
+        color: #92400e;
+      }
+
+      .message-content {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .message-header {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        margin-bottom: var(--space-1);
+      }
+
+      .message.user .message-header {
+        flex-direction: row-reverse;
+      }
+
+      .message-name {
+        font-weight: 700;
+        font-size: 0.9rem;
+      }
+
+      .message-name.developer { color: var(--dev); }
+      .message-name.reviewer { color: var(--reviewer); }
+      .message-name.creative { color: var(--creative); }
+      .message-name.user { color: #92400e; }
+
+      .message-time {
+        font-size: 0.75rem;
+        color: var(--ink-muted);
+      }
+
+      .message-bubble {
+        padding: var(--space-3) var(--space-4);
+        border-radius: var(--radius-lg);
+        font-size: 0.95rem;
+        line-height: 1.5;
+        word-wrap: break-word;
+        white-space: pre-wrap;
+      }
+
+      .message:not(.user) .message-bubble {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-top-left-radius: var(--radius-sm);
+      }
+
+      .message.developer .message-bubble {
+        background: var(--dev-bg);
+        border-color: var(--dev-border);
+      }
+
+      .message.reviewer .message-bubble {
+        background: var(--reviewer-bg);
+        border-color: var(--reviewer-border);
+      }
+
+      .message.creative .message-bubble {
+        background: var(--creative-bg);
+        border-color: var(--creative-border);
+      }
+
+      .message.user .message-bubble {
+        background: linear-gradient(135deg, #fef3c7, #fde68a);
+        border: 1px solid #fcd34d;
+        border-top-right-radius: var(--radius-sm);
+      }
+
+      /* Input Area */
+      .input-area {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-3);
+        margin-top: var(--space-4);
+        box-shadow: var(--shadow-sm);
+        position: relative;
+      }
+
+      .input-wrapper {
+        position: relative;
+      }
+
+      .message-input {
+        width: 100%;
+        min-height: 48px;
+        max-height: 200px;
+        padding: var(--space-3) var(--space-4);
+        border: none;
+        background: transparent;
+        font: inherit;
+        font-size: 0.95rem;
+        resize: none;
+        outline: none;
+        line-height: 1.5;
+      }
+
+      .message-input::placeholder {
+        color: var(--ink-muted);
+      }
+
+      .input-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--space-2) var(--space-3);
+        border-top: 1px solid var(--border);
+        margin-top: var(--space-2);
+      }
+
+      .input-hint {
+        font-size: 0.8rem;
+        color: var(--ink-muted);
+      }
+
+      .input-hint kbd {
+        background: var(--bg);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: inherit;
+        font-size: 0.75rem;
+        border: 1px solid var(--border);
+      }
+
+      .btn {
+        border: none;
+        border-radius: var(--radius-full);
+        padding: var(--space-2) var(--space-5);
+        font: inherit;
+        font-weight: 700;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .btn-send {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+      }
+
+      .btn-send:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+      }
+
+      .btn-secondary {
+        background: var(--bg);
+        color: var(--ink-muted);
+        border: 1px solid var(--border);
+      }
+
+      .btn-secondary:hover:not(:disabled) {
+        background: var(--border);
+      }
+
+      /* @ Mention Popup */
+      .mention-popup {
+        position: absolute;
+        bottom: 100%;
+        left: 0;
+        right: 0;
+        margin-bottom: var(--space-2);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-lg);
+        overflow: hidden;
+        display: none;
+        animation: popIn 0.15s ease-out;
+      }
+
+      @keyframes popIn {
+        from {
+          opacity: 0;
+          transform: translateY(4px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .mention-popup.show {
+        display: block;
+      }
+
+      .mention-header {
+        padding: var(--space-2) var(--space-4);
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--ink-muted);
+        background: var(--bg);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .mention-list {
+        list-style: none;
+        padding: var(--space-2);
+      }
+
+      .mention-item {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        padding: var(--space-3);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition: background 0.15s ease;
+      }
+
+      .mention-item:hover,
+      .mention-item.selected {
+        background: var(--bg);
+      }
+
+      .mention-item.selected {
+        outline: 2px solid var(--dev);
+      }
+
+      .mention-item .avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 1rem;
+      }
+
+      .mention-item-info {
+        flex: 1;
+      }
+
+      .mention-item-name {
+        font-weight: 700;
+        font-size: 0.9rem;
+      }
+
+      .mention-item-desc {
+        font-size: 0.8rem;
+        color: var(--ink-muted);
+      }
+
+      /* Typing Indicator */
+      .typing-indicator {
+        display: flex;
+        gap: var(--space-3);
+        padding: var(--space-3);
+        animation: messageIn 0.3s ease-out;
+      }
+
+      .typing-dots {
+        display: flex;
+        gap: 4px;
+        padding: var(--space-3) var(--space-4);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        border-top-left-radius: var(--radius-sm);
+      }
+
+      .typing-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--ink-muted);
+        animation: typingBounce 1.4s ease-in-out infinite;
+      }
+
+      .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+      .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+      @keyframes typingBounce {
+        0%, 60%, 100% { transform: translateY(0); }
+        30% { transform: translateY(-4px); }
+      }
+
+      /* Empty State */
+      .empty-state {
+        text-align: center;
+        padding: var(--space-8);
+        color: var(--ink-muted);
+      }
+
+      .empty-icon {
+        font-size: 3rem;
+        margin-bottom: var(--space-4);
+      }
+
+      .empty-title {
+        font-weight: 700;
+        font-size: 1.1rem;
+        margin-bottom: var(--space-2);
+        color: var(--ink);
+      }
+
+      .empty-desc {
+        font-size: 0.9rem;
+        max-width: 300px;
+        margin: 0 auto;
+      }
+
+      /* Responsive */
+      @media (max-width: 640px) {
+        .header {
+          padding: var(--space-3) var(--space-4);
+        }
+
+        .chat-container {
+          padding: var(--space-3);
+        }
+
+        .message {
+          max-width: 90%;
+        }
+
+        .avatar {
+          width: 36px;
+          height: 36px;
+          font-size: 1rem;
+        }
+
+        .input-hint {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="header">
+      <div class="header-inner">
+        <div class="logo">
+          <span class="logo-icon">🐱</span>
+          <span>Cat Cafe</span>
+        </div>
+        <div class="header-info">
+          <div class="header-title">猫咖聊天室</div>
+          <div class="header-subtitle">
+            <span class="header-status">
+              <span class="status-dot" id="statusDot"></span>
+              <span id="statusText">三只猫猫在线等你来撩</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="chat-container">
+      <div class="messages-area" id="messagesArea">
+        <!-- Messages will be rendered here -->
+      </div>
+
+      <div class="input-area">
+        <div class="input-wrapper">
+          <textarea
+            class="message-input"
+            id="messageInput"
+            placeholder="输入 @ 可以召唤猫猫..."
+            rows="1"
+          ></textarea>
+
+          <!-- @ Mention Popup -->
+          <div class="mention-popup" id="mentionPopup">
+            <div class="mention-header">选择要@的猫猫</div>
+            <ul class="mention-list" id="mentionList">
+              <li class="mention-item" data-agent="developer">
+                <div class="avatar developer">D</div>
+                <div class="mention-item-info">
+                  <div class="mention-item-name" style="color: var(--dev);">@developer 开发猫</div>
+                  <div class="mention-item-desc">负责代码实现、架构设计、任务拆解</div>
+                </div>
+              </li>
+              <li class="mention-item" data-agent="reviewer">
+                <div class="avatar reviewer">R</div>
+                <div class="mention-item-info">
+                  <div class="mention-item-name" style="color: var(--reviewer);">@reviewer 审查猫</div>
+                  <div class="mention-item-desc">负责代码审查、风险检查、测试建议</div>
+                </div>
+              </li>
+              <li class="mention-item" data-agent="creative">
+                <div class="avatar creative">C</div>
+                <div class="mention-item-info">
+                  <div class="mention-item-name" style="color: var(--creative);">@creative 创意猫</div>
+                  <div class="mention-item-desc">负责UI设计、交互优化、文案创意</div>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="input-actions">
+          <div class="input-hint">
+            <kbd>Ctrl</kbd> + <kbd>Enter</kbd> 发送 · <kbd>↑↓</kbd> 选择 · <kbd>Enter</kbd> 确认
+          </div>
+          <div style="display: flex; gap: var(--space-2);">
+            <button class="btn btn-secondary" id="clearBtn" type="button">清空</button>
+            <button class="btn btn-send" id="sendBtn" type="button">发送</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      // Agent metadata
+      const AGENTS = {
+        developer: {
+          id: 'developer',
+          name: '开发猫',
+          avatar: 'D',
+          cls: 'developer'
+        },
+        reviewer: {
+          id: 'reviewer',
+          name: '审查猫',
+          avatar: 'R',
+          cls: 'reviewer'
+        },
+        creative: {
+          id: 'creative',
+          name: '创意猫',
+          avatar: 'C',
+          cls: 'creative'
+        }
+      };
+
+      // State
+      const state = {
+        messages: [],
+        status: 'idle',
+        currentAgent: null,
+        isRunning: false,
+        mentionPopupOpen: false,
+        mentionSelectedIndex: 0,
+        mentionStartPosition: -1,
+        timeoutConfig: null
+      };
+
+      // DOM elements
+      const dom = {
+        messagesArea: document.getElementById('messagesArea'),
+        messageInput: document.getElementById('messageInput'),
+        sendBtn: document.getElementById('sendBtn'),
+        clearBtn: document.getElementById('clearBtn'),
+        mentionPopup: document.getElementById('mentionPopup'),
+        mentionList: document.getElementById('mentionList'),
+        statusDot: document.getElementById('statusDot'),
+        statusText: document.getElementById('statusText')
+      };
+
+      // Utilities
+      function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      function formatTime(isoString) {
+        const date = new Date(isoString);
+        return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
+      }
+
+      function nowTime() {
+        return formatTime(new Date().toISOString());
+      }
+
+      // Extract @mentions from message
+      function extractMentions(text) {
+        const mentionRegex = /@(developer|reviewer|creative|开发猫|审查猫|创意猫)/gi;
+        const matches = text.match(mentionRegex);
+        if (!matches) return [];
+        
+        const agentMap = {
+          'developer': 'developer',
+          'reviewer': 'reviewer',
+          'creative': 'creative',
+          '开发猫': 'developer',
+          '审查猫': 'reviewer',
+          '创意猫': 'creative'
+        };
+        
+        return [...new Set(matches.map(m => agentMap[m.toLowerCase().slice(1)]).filter(Boolean))];
+      }
+
+      // Render messages
+      function renderMessages() {
+        if (state.messages.length === 0) {
+          dom.messagesArea.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-icon">😺</div>
+              <div class="empty-title">欢迎来到猫咖聊天室！</div>
+              <div class="empty-desc">
+                在输入框中输入 @ 选择要对话的猫猫<br>
+                你也可以同时@多只猫猫让它们协作
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        dom.messagesArea.innerHTML = state.messages.map(msg => {
+          const isUser = msg.role === 'user';
+          const agent = AGENTS[msg.role] || { name: '未知', avatar: '?', cls: '' };
+          
+          return `
+            <div class="message ${isUser ? 'user' : agent.cls}">
+              <div class="avatar ${isUser ? 'user' : agent.cls}">
+                ${isUser ? '我' : agent.avatar}
+              </div>
+              <div class="message-content">
+                <div class="message-header">
+                  <span class="message-name ${isUser ? 'user' : agent.cls}">
+                    ${isUser ? '你' : agent.name}
+                  </span>
+                  <span class="message-time">${msg.time || nowTime()}</span>
+                </div>
+                <div class="message-bubble">${escapeHtml(msg.content)}</div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        dom.messagesArea.scrollTop = dom.messagesArea.scrollHeight;
+      }
+
+      // Render typing indicator
+      function renderTyping(agent) {
+        const agentInfo = AGENTS[agent] || { name: '猫猫', avatar: '?', cls: '' };
+        
+        // Remove existing typing indicator
+        const existing = dom.messagesArea.querySelector('.typing-indicator');
+        if (existing) existing.remove();
+
+        if (agent) {
+          const typingHtml = `
+            <div class="typing-indicator">
+              <div class="avatar ${agentInfo.cls}">${agentInfo.avatar}</div>
+              <div class="typing-dots">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+              </div>
+            </div>
+          `;
+          dom.messagesArea.insertAdjacentHTML('beforeend', typingHtml);
+          dom.messagesArea.scrollTop = dom.messagesArea.scrollHeight;
+        }
+      }
+
+      // Update status
+      function updateStatus(status, agent) {
+        state.status = status;
+        state.isRunning = status === 'running';
+        
+        dom.statusDot.classList.toggle('running', state.isRunning);
+        
+        if (state.isRunning) {
+          const agentInfo = AGENTS[agent] || { name: '猫猫' };
+          dom.statusText.textContent = `${agentInfo.name}正在工作中...`;
+        } else {
+          dom.statusText.textContent = '三只猫猫在线等你来撩';
+        }
+      }
+
+      // Mention popup control
+      function showMentionPopup() {
+        state.mentionPopupOpen = true;
+        state.mentionSelectedIndex = 0;
+        dom.mentionPopup.classList.add('show');
+        updateMentionSelection();
+      }
+
+      function hideMentionPopup() {
+        state.mentionPopupOpen = false;
+        dom.mentionPopup.classList.remove('show');
+      }
+
+      function updateMentionSelection() {
+        const items = dom.mentionList.querySelectorAll('.mention-item');
+        items.forEach((item, index) => {
+          item.classList.toggle('selected', index === state.mentionSelectedIndex);
+        });
+      }
+
+      function insertMention(agentId) {
+        const input = dom.messageInput;
+        const text = input.value;
+        
+        // Find the @ position (last one before cursor)
+        const cursorPos = input.selectionStart;
+        let atPos = cursorPos - 1;
+        while (atPos >= 0 && text[atPos] !== '@') {
+          atPos--;
+        }
+        
+        if (atPos >= 0) {
+          // Replace from @ to cursor with @agentId
+          const before = text.substring(0, atPos);
+          const after = text.substring(cursorPos);
+          const newValue = before + `@${agentId} ` + after;
+          
+          input.value = newValue;
+          const newCursorPos = before.length + agentId.length + 2;
+          input.setSelectionRange(newCursorPos, newCursorPos);
+        }
+        
+        hideMentionPopup();
+        input.focus();
+      }
+
+      // Input handlers
+      dom.messageInput.addEventListener('input', (e) => {
+        const input = e.target;
+        const text = input.value;
+        const cursorPos = input.selectionStart;
+        
+        // Check if we just typed @
+        if (cursorPos > 0 && text[cursorPos - 1] === '@') {
+          // Check if there's a space before @ or it's at the start
+          const beforeAt = text.substring(0, cursorPos - 1);
+          if (beforeAt === '' || beforeAt.endsWith(' ') || beforeAt.endsWith('\n')) {
+            showMentionPopup();
+          }
+        } else if (state.mentionPopupOpen) {
+          // Check if we're still typing a mention
+          let atPos = cursorPos - 1;
+          while (atPos >= 0 && text[atPos] !== '@' && text[atPos] !== ' ' && text[atPos] !== '\n') {
+            atPos--;
+          }
+          
+          if (atPos < 0 || text[atPos] !== '@') {
+            hideMentionPopup();
+          } else {
+            // Filter mentions based on what's typed after @
+            const searchTerm = text.substring(atPos + 1, cursorPos).toLowerCase();
+            const items = dom.mentionList.querySelectorAll('.mention-item');
+            let visibleCount = 0;
+            
+            items.forEach(item => {
+              const agentId = item.dataset.agent;
+              const agentName = AGENTS[agentId]?.name || '';
+              const visible = agentId.includes(searchTerm) || agentName.includes(searchTerm);
+              item.style.display = visible ? 'flex' : 'none';
+              if (visible) visibleCount++;
+            });
+            
+            if (visibleCount === 0) {
+              hideMentionPopup();
+            }
+          }
+        }
+        
+        // Auto-resize textarea
+        input.style.height = 'auto';
+        input.style.height = Math.min(input.scrollHeight, 200) + 'px';
+      });
+
+      dom.messageInput.addEventListener('keydown', (e) => {
+        if (state.mentionPopupOpen) {
+          const items = dom.mentionList.querySelectorAll('.mention-item:not([style*="display: none"])');
+          
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            state.mentionSelectedIndex = Math.min(state.mentionSelectedIndex + 1, items.length - 1);
+            updateMentionSelection();
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            state.mentionSelectedIndex = Math.max(state.mentionSelectedIndex - 1, 0);
+            updateMentionSelection();
+          } else if (e.key === 'Enter' || e.key === 'Tab') {
+            e.preventDefault();
+            const selectedItem = items[state.mentionSelectedIndex];
+            if (selectedItem) {
+              insertMention(selectedItem.dataset.agent);
+            }
+          } else if (e.key === 'Escape') {
+            hideMentionPopup();
+          }
+        } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+
+      // Click handlers for mention items
+      dom.mentionList.addEventListener('click', (e) => {
+        const item = e.target.closest('.mention-item');
+        if (item) {
+          insertMention(item.dataset.agent);
+        }
+      });
+
+      // Send message
+      async function sendMessage() {
+        const message = dom.messageInput.value.trim();
+        if (!message || state.isRunning) return;
+
+        // Extract mentioned agents
+        const mentions = extractMentions(message);
+        const targetAgent = mentions[0] || 'developer';
+
+        // Add user message
+        state.messages.push({
+          role: 'user',
+          content: message,
+          time: nowTime()
+        });
+        renderMessages();
+        
+        // Clear input
+        dom.messageInput.value = '';
+        dom.messageInput.style.height = 'auto';
+        hideMentionPopup();
+
+        // Update status
+        updateStatus('running', targetAgent);
+        renderTyping(targetAgent);
+
+        try {
+          const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ agent: targetAgent, message })
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            state.messages.push({
+              role: targetAgent,
+              content: `喵呜，出错了：${data.error || '未知错误'}`,
+              time: nowTime()
+            });
+          }
+        } catch (error) {
+          state.messages.push({
+            role: targetAgent,
+            content: '网络连接失败了喵...',
+            time: nowTime()
+          });
+        }
+
+        renderTyping(null);
+        updateStatus('idle');
+        renderMessages();
+      }
+
+      // Clear messages
+      function clearMessages() {
+        state.messages = [];
+        renderMessages();
+      }
+
+      // Event listeners
+      dom.sendBtn.addEventListener('click', sendMessage);
+      dom.clearBtn.addEventListener('click', clearMessages);
+
+      // Poll for status updates
+      async function pollStatus() {
+        try {
+          const response = await fetch('/api/status');
+          if (response.ok) {
+            const data = await response.json();
+            
+            // Update status
+            if (data.status !== state.status) {
+              updateStatus(data.status, data.currentAgent);
+            }
+            
+            // Store timeout config
+            if (data.timeoutConfig) {
+              state.timeoutConfig = data.timeoutConfig;
+            }
+            
+            // Load messages from server (both during running and idle)
+            if (Array.isArray(data.publicMessages) && data.publicMessages.length > 0) {
+              // Build a set of existing message contents to avoid duplicates
+              const existingContents = new Set(state.messages.map(m => `${m.role}:${m.content}`));
+              
+              // Filter out messages that already exist
+              const newMessages = data.publicMessages.filter(m => {
+                const key = `${m.agent}:${m.content}`;
+                return !existingContents.has(key);
+              });
+              
+              if (newMessages.length > 0) {
+                newMessages.forEach(m => {
+                  state.messages.push({
+                    role: m.agent || 'developer',
+                    content: m.content,
+                    time: m.time || nowTime()
+                  });
+                });
+                
+                renderTyping(null);
+                renderMessages();
+              }
+            }
+          }
+        } catch (e) {
+          // Silently fail
+        }
+      }
+
+      // Initialize - load history on startup
+      async function init() {
+        await pollStatus(); // Load initial history
+        renderMessages();
+        setInterval(pollStatus, 1500);
+      }
+
+      // Start
+      init();
+
+      // Focus input
+      dom.messageInput.focus();
+    </script>
+  </body>
+</html>

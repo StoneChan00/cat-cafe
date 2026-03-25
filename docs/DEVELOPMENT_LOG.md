@@ -142,7 +142,7 @@ src/
 
 ## 开发记录
 
-### 2026-03-22 Phase 1 核心模块开发完成
+### 2026-03-23 Phase 1 核心模块开发完成 + Web 前端
 
 **已完成：**
 - Phase 0 验收确认
@@ -158,6 +158,8 @@ src/
 - 路由器（src/router/Router.ts）
 - MCP Server（src/mcp/cat-cafe-mcp.ts）
 - 主入口（src/index.ts）
+- **Web 前端界面（src/web/index.html）**
+- **Web API 服务器（src/web/server.ts）**
 
 **代码结构：**
 ```
@@ -170,8 +172,28 @@ src/
 ├── server/CallbackServer.ts # HTTP 回调服务
 ├── router/Router.ts       # @agent 解析 + Worklist 引擎
 ├── mcp/cat-cafe-mcp.ts    # MCP 工具（get_context, post_message）
-└── index.ts               # 主入口 + CatCafe 类
+├── index.ts               # 主入口 + CatCafe 类
+└── web/
+    ├── index.html         # Web 前端界面
+    ├── server.ts          # Web API 服务器
+    └── web-cli.ts         # Web 入口
 ```
+
+**Web 前端功能：**
+- Agent 选择器（developer/reviewer/creative）
+- 消息输入和发送
+- 公开消息区（聊天室风格）
+- 内部输出区（可折叠）
+- 状态显示（执行状态、时间）
+- 控制按钮（发送、停止、清空）
+
+**API 接口：**
+- GET /api/agents - 获取 Agent 列表
+- GET /api/status - 获取执行状态
+- POST /api/chat - 发送消息
+- POST /api/stop - 停止执行
+- POST /api/callbacks/post-message - MCP 回调
+- GET /api/callbacks/thread-context - MCP 上下文
 
 **类型检查：** ✅ 通过
 
@@ -195,14 +217,20 @@ src/
 
 **运行验证：**
 ```bash
+# 构建
+npm run build
+
+# 运行 CLI 版本
+npm start
+
+# 运行 Web 版本
+npm run web
+
 # 快速验证
 node test-quick.js
 
 # 完整模块测试
 npm test
-
-# 实际运行
-npm start
 ```
 
 ### 2026-03-22 Phase 1 开发启动
