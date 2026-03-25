@@ -1,0 +1,20 @@
+{
+  "sessionId": "92563fbf-45a6-4118-a0bd-b69deec5561c",
+  "threadId": "thread-1",
+  "parentSessionId": "080456f6-85c0-447f-bba4-e90974aa658b",
+  "status": "active",
+  "createdAt": "2026-03-25T14:55:33.751Z",
+  "lastActiveAt": "2026-03-25T14:55:33.751Z",
+  "contextBudget": {
+    "maxTokens": 150000,
+    "usedTokens": 0,
+    "warningThreshold": 0.85,
+    "sealingThreshold": 0.9
+  },
+  "invocationIds": [],
+  "metadata": {
+    "messageCount": 0,
+    "agentSwitches": [],
+    "totalDurationMs": 0
+  }
+}

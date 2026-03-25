@@ -1,0 +1,15 @@
+{
+  "id": "63e5e59f-b2bd-4c2f-b623-2399d3891ab8",
+  "name": "Phase 2 工程化",
+  "description": "Phase 2 的工程化护栏功能",
+  "status": "draft",
+  "designDocs": [
+    "design-doc-1"
+  ],
+  "backlogItems": [
+    "90c63c81-7ea0-4dfd-87fb-463bbd711d06"
+  ],
+  "lessons": [],
+  "createdAt": "2026-03-25T14:16:21.975Z",
+  "updatedAt": "2026-03-25T14:16:21.982Z"
+}

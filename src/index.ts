@@ -339,7 +339,55 @@ async function main(): Promise<void> {
 }
 
 // 导出
-export { ThreadStore, CallbackServer, Router, PromptBuilder, OpenCodeAgentRunner };
+export { ThreadStore } from './store/ThreadStore';
+export { InvocationStore, type CompleteInvocationRecord } from './store/InvocationStore';
+export { CallbackServer } from './server/CallbackServer';
+export { Router } from './router/Router';
+export { PromptBuilder, buildPrompt, buildSimplePrompt } from './prompt/PromptBuilder';
+export { OpenCodeAgentRunner, type EventHandler, runAgent } from './runner/OpenCodeAgentRunner';
+export { TranscriptManager, type TranscriptEntry, type SessionSummary } from './utils/TranscriptManager';
+export { KnowledgeIndex, type KnowledgeEntry, type FeatureDoc, type BacklogItem, type KnowledgeType } from './knowledge/KnowledgeIndex';
+
+// Phase 3 新模块
+export { SessionManager, type SessionRecord, type SessionStatus, type ContextUsageStats, type SealingReason } from './session/SessionManager';
+export { ContextRetriever, type ContextSlice, type RetrievalStrategy } from './session/ContextRetriever';
+export { SessionSearch, type SessionSearchResult, type SessionTimeline } from './session/SessionSearch';
+export { ContextGatekeeper, type ContextQualityAssessment, type ContextInjectionDecision } from './context/ContextGatekeeper';
+export { KnowledgeHub, type KnowledgeGraph, type SmartRecommendation } from './knowledge/KnowledgeHub';
+
+// Phase 4 新模块
+export { 
+  RichMessageBuilder, 
+  renderBlockToHTML, 
+  parseMarkdownToBlocks,
+  createTextBlock, 
+  createCodeBlock, 
+  createDiffBlock, 
+  createListBlock, 
+  createTableBlock,
+  createStatusBlock,
+  createProgressBlock,
+  createCalloutBlock,
+  createCollapseBlock,
+  createTabsBlock,
+  serializeRichMessage,
+  deserializeRichMessage,
+  type RichBlock, 
+  type RichMessage,
+  type TextBlock,
+  type CodeBlock,
+  type DiffBlock,
+  type StatusBlock,
+  type ProgressBlock,
+  type CalloutBlock,
+  type CollapseBlock,
+  type TabsBlock
+} from './message/RichBlock';
+export { ProjectManager, type ProjectConfig, type ProjectSwitchContext, type ProjectStats } from './config/ProjectManager';
+export { WhisperSystem, type WhisperMessage, type MessageVisibility, type VisibilityContext } from './visibility/WhisperSystem';
+export { SkillRegistry, type Skill, type SkillInstance, type SkillExecutionResult, type SkillType } from './skills/SkillRegistry';
+export { CommandEngine, type Command, type CommandContext, type CommandResult, type ParsedCommand } from './commands/CommandEngine';
+
 export * from './types';
 export * from './config/agents';
 

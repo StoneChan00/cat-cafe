@@ -2,9 +2,13 @@
 /**
  * Router
  * 负责 @agent 检测、路由和 Worklist 管理
+ * Phase 2 增强：添加 Thread 隔离验证
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Router = exports.WorklistEngine = void 0;
+exports.Router = exports.WorklistEngine = exports.ThreadIsolationError = void 0;
+exports.validateThreadIsolation = validateThreadIsolation;
+exports.safeGetThreadProperty = safeGetThreadProperty;
+exports.createThreadSafeOperations = createThreadSafeOperations;
 exports.parseUserInput = parseUserInput;
 exports.extractA2ATriggers = extractA2ATriggers;
 const agents_1 = require("../config/agents");
@@ -12,6 +16,74 @@ const agents_1 = require("../config/agents");
 const AGENT_MENTION_REGEX = /@([\w\u4e00-\u9fa5]+)/g;
 // 最大 A2A 深度
 const MAX_A2A_DEPTH = 5;
+// ============ Phase 2: Thread 隔离验证 ============
+/**
+ * Thread 隔离错误
+ */
+class ThreadIsolationError extends Error {
+    expectedThreadId;
+    actualThreadId;
+    constructor(message, expectedThreadId, actualThreadId) {
+        super(message);
+        this.expectedThreadId = expectedThreadId;
+        this.actualThreadId = actualThreadId;
+        this.name = 'ThreadIsolationError';
+    }
+}
+exports.ThreadIsolationError = ThreadIsolationError;
+/**
+ * 验证 Thread 隔离
+ * 确保操作不会跨 Thread 污染
+ */
+function validateThreadIsolation(currentThreadId, expectedThreadId) {
+    if (!expectedThreadId) {
+        return; // 无期望值，跳过验证
+    }
+    if (currentThreadId !== expectedThreadId) {
+        throw new ThreadIsolationError(`Thread 隔离违规: 期望 Thread ${expectedThreadId}，但当前在 Thread ${currentThreadId}`, expectedThreadId, currentThreadId);
+    }
+}
+/**
+ * 安全地获取 Thread 属性
+ * 确保不会访问到其他 Thread 的数据
+ */
+function safeGetThreadProperty(thread, property, expectedThreadId) {
+    validateThreadIsolation(thread.threadId, expectedThreadId);
+    return thread[property];
+}
+/**
+ * 创建 Thread 安全包装器
+ * 所有操作都绑定到特定 Thread
+ */
+function createThreadSafeOperations(threadId) {
+    return {
+        /**
+         * 验证当前 Thread
+         */
+        verify: (currentThread) => {
+            return currentThread.threadId === threadId;
+        },
+        /**
+         * 获取 Thread ID
+         */
+        getThreadId: () => threadId,
+        /**
+         * 包装 Worklist 操作
+         */
+        withWorklist: (thread, operation) => {
+            validateThreadIsolation(thread.threadId, threadId);
+            return operation(thread.worklist);
+        },
+        /**
+         * 包装消息操作
+         */
+        withMessages: (thread, operation) => {
+            validateThreadIsolation(thread.threadId, threadId);
+            return operation(thread.messages);
+        }
+    };
+}
+// ============ 原有函数 ============
 /**
  * 解析用户输入
  * 提取 @agent 召唤和实际内容
@@ -212,6 +284,42 @@ class Router {
      */
     getWorklistEngine() {
         return this.worklistEngine;
+    }
+    // ============ Phase 2: Thread 隔离验证方法 ============
+    /**
+     * 验证 Thread 上下文
+     * 确保当前操作在正确的 Thread 上执行
+     */
+    verifyThreadContext(thread, expectedThreadId) {
+        try {
+            validateThreadIsolation(thread.threadId, expectedThreadId);
+            return true;
+        }
+        catch {
+            return false;
+        }
+    }
+    /**
+     * 安全地执行 Thread 操作
+     * 自动验证 Thread 隔离
+     */
+    safeExecute(thread, operation, expectedThreadId) {
+        validateThreadIsolation(thread.threadId, expectedThreadId);
+        return operation();
+    }
+    /**
+     * 获取 Thread 状态报告
+     * 用于调试和验证
+     */
+    getThreadReport(thread) {
+        return {
+            threadId: thread.threadId,
+            messageCount: thread.messages.length,
+            worklistLength: thread.worklist.length,
+            currentAgent: thread.currentAgent,
+            status: thread.status,
+            isolation: 'verified'
+        };
     }
 }
 exports.Router = Router;

@@ -1,0 +1,13 @@
+{
+  "invocationId": "81b3d45b-2881-48c8-95fc-360e1abfdedf",
+  "threadId": "thread-1",
+  "agentId": "developer",
+  "model": "codex_service/gpt-5.3",
+  "startedAt": "2026-03-25T14:16:21.946Z",
+  "status": "pending",
+  "prompt": "任务1",
+  "events": [],
+  "toolUses": [],
+  "publicMessages": [],
+  "depth": 0
+}

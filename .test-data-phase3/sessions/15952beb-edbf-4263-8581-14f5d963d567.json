@@ -1,0 +1,32 @@
+{
+  "sessionId": "15952beb-edbf-4263-8581-14f5d963d567",
+  "threadId": "thread-1",
+  "status": "sealed",
+  "createdAt": "2026-03-25T14:55:33.743Z",
+  "lastActiveAt": "2026-03-25T14:55:33.743Z",
+  "contextBudget": {
+    "maxTokens": 150000,
+    "usedTokens": 0,
+    "warningThreshold": 0.85,
+    "sealingThreshold": 0.9
+  },
+  "invocationIds": [],
+  "metadata": {
+    "messageCount": 0,
+    "agentSwitches": [],
+    "totalDurationMs": 0
+  },
+  "summary": {
+    "keyDecisions": [
+      "决定采用 JWT 方案"
+    ],
+    "openQuestions": [
+      "暂无未解决问题"
+    ],
+    "nextActions": [
+      "继续下一 Session"
+    ],
+    "criticalContext": "Thread 共 2 条消息; Session 包含 0 个 invocation; 当前 Agent: 未指定"
+  },
+  "sealedAt": "2026-03-25T14:55:33.743Z"
+}

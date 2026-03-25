@@ -18,18 +18,13 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.OpenCodeAgentRunner = exports.PromptBuilder = exports.Router = exports.CallbackServer = exports.ThreadStore = exports.CatCafe = void 0;
+exports.CommandEngine = exports.SkillRegistry = exports.WhisperSystem = exports.ProjectManager = exports.deserializeRichMessage = exports.serializeRichMessage = exports.createTabsBlock = exports.createCollapseBlock = exports.createCalloutBlock = exports.createProgressBlock = exports.createStatusBlock = exports.createTableBlock = exports.createListBlock = exports.createDiffBlock = exports.createCodeBlock = exports.createTextBlock = exports.parseMarkdownToBlocks = exports.renderBlockToHTML = exports.RichMessageBuilder = exports.KnowledgeHub = exports.ContextGatekeeper = exports.SessionSearch = exports.ContextRetriever = exports.SessionManager = exports.KnowledgeIndex = exports.TranscriptManager = exports.runAgent = exports.OpenCodeAgentRunner = exports.buildSimplePrompt = exports.buildPrompt = exports.PromptBuilder = exports.Router = exports.CallbackServer = exports.InvocationStore = exports.ThreadStore = exports.CatCafe = void 0;
 const readline_1 = require("readline");
 const ThreadStore_1 = require("./store/ThreadStore");
-Object.defineProperty(exports, "ThreadStore", { enumerable: true, get: function () { return ThreadStore_1.ThreadStore; } });
 const CallbackServer_1 = require("./server/CallbackServer");
-Object.defineProperty(exports, "CallbackServer", { enumerable: true, get: function () { return CallbackServer_1.CallbackServer; } });
 const Router_1 = require("./router/Router");
-Object.defineProperty(exports, "Router", { enumerable: true, get: function () { return Router_1.Router; } });
 const PromptBuilder_1 = require("./prompt/PromptBuilder");
-Object.defineProperty(exports, "PromptBuilder", { enumerable: true, get: function () { return PromptBuilder_1.PromptBuilder; } });
 const OpenCodeAgentRunner_1 = require("./runner/OpenCodeAgentRunner");
-Object.defineProperty(exports, "OpenCodeAgentRunner", { enumerable: true, get: function () { return OpenCodeAgentRunner_1.OpenCodeAgentRunner; } });
 const agents_1 = require("./config/agents");
 // 配置
 const DEFAULT_PORT = 3200;
@@ -288,6 +283,62 @@ async function main() {
     // 启动交互式 CLI
     await startInteractive(catCafe);
 }
+// 导出
+var ThreadStore_2 = require("./store/ThreadStore");
+Object.defineProperty(exports, "ThreadStore", { enumerable: true, get: function () { return ThreadStore_2.ThreadStore; } });
+var InvocationStore_1 = require("./store/InvocationStore");
+Object.defineProperty(exports, "InvocationStore", { enumerable: true, get: function () { return InvocationStore_1.InvocationStore; } });
+var CallbackServer_2 = require("./server/CallbackServer");
+Object.defineProperty(exports, "CallbackServer", { enumerable: true, get: function () { return CallbackServer_2.CallbackServer; } });
+var Router_2 = require("./router/Router");
+Object.defineProperty(exports, "Router", { enumerable: true, get: function () { return Router_2.Router; } });
+var PromptBuilder_2 = require("./prompt/PromptBuilder");
+Object.defineProperty(exports, "PromptBuilder", { enumerable: true, get: function () { return PromptBuilder_2.PromptBuilder; } });
+Object.defineProperty(exports, "buildPrompt", { enumerable: true, get: function () { return PromptBuilder_2.buildPrompt; } });
+Object.defineProperty(exports, "buildSimplePrompt", { enumerable: true, get: function () { return PromptBuilder_2.buildSimplePrompt; } });
+var OpenCodeAgentRunner_2 = require("./runner/OpenCodeAgentRunner");
+Object.defineProperty(exports, "OpenCodeAgentRunner", { enumerable: true, get: function () { return OpenCodeAgentRunner_2.OpenCodeAgentRunner; } });
+Object.defineProperty(exports, "runAgent", { enumerable: true, get: function () { return OpenCodeAgentRunner_2.runAgent; } });
+var TranscriptManager_1 = require("./utils/TranscriptManager");
+Object.defineProperty(exports, "TranscriptManager", { enumerable: true, get: function () { return TranscriptManager_1.TranscriptManager; } });
+var KnowledgeIndex_1 = require("./knowledge/KnowledgeIndex");
+Object.defineProperty(exports, "KnowledgeIndex", { enumerable: true, get: function () { return KnowledgeIndex_1.KnowledgeIndex; } });
+// Phase 3 新模块
+var SessionManager_1 = require("./session/SessionManager");
+Object.defineProperty(exports, "SessionManager", { enumerable: true, get: function () { return SessionManager_1.SessionManager; } });
+var ContextRetriever_1 = require("./session/ContextRetriever");
+Object.defineProperty(exports, "ContextRetriever", { enumerable: true, get: function () { return ContextRetriever_1.ContextRetriever; } });
+var SessionSearch_1 = require("./session/SessionSearch");
+Object.defineProperty(exports, "SessionSearch", { enumerable: true, get: function () { return SessionSearch_1.SessionSearch; } });
+var ContextGatekeeper_1 = require("./context/ContextGatekeeper");
+Object.defineProperty(exports, "ContextGatekeeper", { enumerable: true, get: function () { return ContextGatekeeper_1.ContextGatekeeper; } });
+var KnowledgeHub_1 = require("./knowledge/KnowledgeHub");
+Object.defineProperty(exports, "KnowledgeHub", { enumerable: true, get: function () { return KnowledgeHub_1.KnowledgeHub; } });
+// Phase 4 新模块
+var RichBlock_1 = require("./message/RichBlock");
+Object.defineProperty(exports, "RichMessageBuilder", { enumerable: true, get: function () { return RichBlock_1.RichMessageBuilder; } });
+Object.defineProperty(exports, "renderBlockToHTML", { enumerable: true, get: function () { return RichBlock_1.renderBlockToHTML; } });
+Object.defineProperty(exports, "parseMarkdownToBlocks", { enumerable: true, get: function () { return RichBlock_1.parseMarkdownToBlocks; } });
+Object.defineProperty(exports, "createTextBlock", { enumerable: true, get: function () { return RichBlock_1.createTextBlock; } });
+Object.defineProperty(exports, "createCodeBlock", { enumerable: true, get: function () { return RichBlock_1.createCodeBlock; } });
+Object.defineProperty(exports, "createDiffBlock", { enumerable: true, get: function () { return RichBlock_1.createDiffBlock; } });
+Object.defineProperty(exports, "createListBlock", { enumerable: true, get: function () { return RichBlock_1.createListBlock; } });
+Object.defineProperty(exports, "createTableBlock", { enumerable: true, get: function () { return RichBlock_1.createTableBlock; } });
+Object.defineProperty(exports, "createStatusBlock", { enumerable: true, get: function () { return RichBlock_1.createStatusBlock; } });
+Object.defineProperty(exports, "createProgressBlock", { enumerable: true, get: function () { return RichBlock_1.createProgressBlock; } });
+Object.defineProperty(exports, "createCalloutBlock", { enumerable: true, get: function () { return RichBlock_1.createCalloutBlock; } });
+Object.defineProperty(exports, "createCollapseBlock", { enumerable: true, get: function () { return RichBlock_1.createCollapseBlock; } });
+Object.defineProperty(exports, "createTabsBlock", { enumerable: true, get: function () { return RichBlock_1.createTabsBlock; } });
+Object.defineProperty(exports, "serializeRichMessage", { enumerable: true, get: function () { return RichBlock_1.serializeRichMessage; } });
+Object.defineProperty(exports, "deserializeRichMessage", { enumerable: true, get: function () { return RichBlock_1.deserializeRichMessage; } });
+var ProjectManager_1 = require("./config/ProjectManager");
+Object.defineProperty(exports, "ProjectManager", { enumerable: true, get: function () { return ProjectManager_1.ProjectManager; } });
+var WhisperSystem_1 = require("./visibility/WhisperSystem");
+Object.defineProperty(exports, "WhisperSystem", { enumerable: true, get: function () { return WhisperSystem_1.WhisperSystem; } });
+var SkillRegistry_1 = require("./skills/SkillRegistry");
+Object.defineProperty(exports, "SkillRegistry", { enumerable: true, get: function () { return SkillRegistry_1.SkillRegistry; } });
+var CommandEngine_1 = require("./commands/CommandEngine");
+Object.defineProperty(exports, "CommandEngine", { enumerable: true, get: function () { return CommandEngine_1.CommandEngine; } });
 __exportStar(require("./types"), exports);
 __exportStar(require("./config/agents"), exports);
 // 主入口

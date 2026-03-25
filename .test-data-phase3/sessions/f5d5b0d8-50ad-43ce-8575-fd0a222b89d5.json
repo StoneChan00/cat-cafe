@@ -1,0 +1,19 @@
+{
+  "sessionId": "f5d5b0d8-50ad-43ce-8575-fd0a222b89d5",
+  "threadId": "thread-1",
+  "status": "active",
+  "createdAt": "2026-03-25T14:55:33.739Z",
+  "lastActiveAt": "2026-03-25T14:55:33.739Z",
+  "contextBudget": {
+    "maxTokens": 150000,
+    "usedTokens": 604,
+    "warningThreshold": 0.85,
+    "sealingThreshold": 0.9
+  },
+  "invocationIds": [],
+  "metadata": {
+    "messageCount": 2,
+    "agentSwitches": [],
+    "totalDurationMs": 0
+  }
+}
